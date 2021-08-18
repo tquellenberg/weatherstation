@@ -23,7 +23,7 @@ func generateLineItems(values []float32) []opts.LineData {
 func values(entries []datastore.Entry) []float32 {
 	var s []float32
 	for _, v := range entries {
-    	s = append(s, v.Value)
+		s = append(s, v.Value)
 	}
 	return s
 }
@@ -31,7 +31,7 @@ func values(entries []datastore.Entry) []float32 {
 func timeValues(entries []datastore.Entry) []string {
 	var s []string
 	for _, v := range entries {
-    	s = append(s, v.Time)
+		s = append(s, v.Time)
 	}
 	return s
 }
