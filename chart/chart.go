@@ -37,6 +37,8 @@ func timeValues(entries []datastore.Entry) []string {
 }
 
 func Httpserver(w http.ResponseWriter, _ *http.Request) {
+	log.Println("Httpserver Request")
+
 	data, err := datastore.GetTemperatureSeries()
 	if err != nil {
 		log.Fatal(err)
@@ -58,4 +60,6 @@ func Httpserver(w http.ResponseWriter, _ *http.Request) {
 		AddSeries("Temperatur in Grade Celsius", generateLineItems(values(data))).
 		SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: true}))
 	line.Render(w)
+
+	log.Println("Httpserver Request OKAY")
 }

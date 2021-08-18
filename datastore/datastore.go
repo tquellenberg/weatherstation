@@ -39,6 +39,7 @@ func AppendToStore(res bme280.Result) {
 }
 
 func GetTemperatureSeries() ([]Entry, error) {
+	log.Println("Get temperature series")
 	f, err := os.OpenFile(Filename, os.O_RDONLY, 0644)
 	if err != nil {
 		log.Println("Error: ", err)
@@ -48,6 +49,7 @@ func GetTemperatureSeries() ([]Entry, error) {
 
 	lines, err := csv.NewReader(f).ReadAll()
 	if err != nil {
+		log.Println("Error: ", err)
 		return nil, err
 	}
 
@@ -62,5 +64,6 @@ func GetTemperatureSeries() ([]Entry, error) {
 		e.Value = float32(v)
 		result = append(result, e)
 	}
+	log.Printf("Get temperature series %d", len(result))
 	return result, nil
 }

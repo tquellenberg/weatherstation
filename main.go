@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/tquellenberg/weatherstation/bme280"
+	"github.com/tquellenberg/weatherstation/chart"
 	"github.com/tquellenberg/weatherstation/datastore"
 )
 
@@ -14,9 +16,11 @@ const Address = 0x76
 
 func initHttp() {
 	log.Print("init Http")
-	//	http.HandleFunc("/", chart.Httpserver)
-	//	http.ListenAndServe(":8082", nil)
-	log.Print("Http okay")
+	http.HandleFunc("/", chart.Httpserver)
+	go func() {
+		log.Print("Http start listening")
+		log.Fatal(http.ListenAndServe(":8082", nil))
+	}()
 }
 
 func main() {
