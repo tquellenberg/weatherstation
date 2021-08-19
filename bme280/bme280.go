@@ -38,28 +38,28 @@ const (
 )
 
 type TemperatureCompensation struct {
-	t1 uint16
-	t2 int16
-	t3 int16
+	t1 int32
+	t2 int32
+	t3 int32
 }
 type PressureCompensation struct {
-	p1 uint16
-	p2 int16
-	p3 int16
-	p4 int16
-	p5 int16
-	p6 int16
-	p7 int16
-	p8 int16
-	p9 int16
+	p1 int32
+	p2 int32
+	p3 int32
+	p4 int32
+	p5 int32
+	p6 int32
+	p7 int32
+	p8 int32
+	p9 int32
 }
 type HumidityCompensation struct {
-	h1 uint8
-	h2 int16
-	h3 uint8
-	h4 int16
-	h5 int16
-	h6 int8
+	h1 int32
+	h2 int32
+	h3 int32
+	h4 int32
+	h5 int32
+	h6 int32
 }
 type CompensationValues struct {
 	temperatureCompensation TemperatureCompensation
@@ -102,29 +102,29 @@ func readCompensationValues(dev *i2c.Dev) CompensationValues {
 	var cv CompensationValues
 
 	read := writeReadTx(dev, REG_CALIBRATION, 24)
-	cv.temperatureCompensation.t1 = uint16LE(read[0], read[1])
-	cv.temperatureCompensation.t2 = int16LE(read[2], read[3])
-	cv.temperatureCompensation.t3 = int16LE(read[4], read[5])
+	cv.temperatureCompensation.t1 = int32(uint16LE(read[0], read[1]))
+	cv.temperatureCompensation.t2 = int32(int16LE(read[2], read[3]))
+	cv.temperatureCompensation.t3 = int32(int16LE(read[4], read[5]))
 
-	cv.pressureCompensation.p1 = uint16LE(read[6], read[7])
-	cv.pressureCompensation.p2 = int16LE(read[8], read[9])
-	cv.pressureCompensation.p3 = int16LE(read[10], read[11])
-	cv.pressureCompensation.p4 = int16LE(read[12], read[13])
-	cv.pressureCompensation.p5 = int16LE(read[14], read[15])
-	cv.pressureCompensation.p6 = int16LE(read[16], read[17])
-	cv.pressureCompensation.p7 = int16LE(read[18], read[19])
-	cv.pressureCompensation.p8 = int16LE(read[20], read[21])
-	cv.pressureCompensation.p9 = int16LE(read[22], read[23])
+	cv.pressureCompensation.p1 = int32(uint16LE(read[6], read[7]))
+	cv.pressureCompensation.p2 = int32(int16LE(read[8], read[9]))
+	cv.pressureCompensation.p3 = int32(int16LE(read[10], read[11]))
+	cv.pressureCompensation.p4 = int32(int16LE(read[12], read[13]))
+	cv.pressureCompensation.p5 = int32(int16LE(read[14], read[15]))
+	cv.pressureCompensation.p6 = int32(int16LE(read[16], read[17]))
+	cv.pressureCompensation.p7 = int32(int16LE(read[18], read[19]))
+	cv.pressureCompensation.p8 = int32(int16LE(read[20], read[21]))
+	cv.pressureCompensation.p9 = int32(int16LE(read[22], read[23]))
 
 	read2 := writeReadTx(dev, REG_CALIBRATION_H1, 1)
-	cv.humidityCompensation.h1 = uint8(read2[0])
+	cv.humidityCompensation.h1 = int32(uint8(read2[0]))
 
 	read3 := writeReadTx(dev, REG_CALIBRATION_H2, 7)
-	cv.humidityCompensation.h2 = int16LE(read3[0], read3[1])
-	cv.humidityCompensation.h3 = uint8(read3[2])
-	cv.humidityCompensation.h4 = (int16(read3[3]) << 4) | (int16(read3[4] & 0x0F))
-	cv.humidityCompensation.h5 = (int16(read3[5]) << 4) | (int16(read3[4]) >> 4)
-	cv.humidityCompensation.h6 = int8(read3[6])
+	cv.humidityCompensation.h2 = int32(int16LE(read3[0], read3[1]))
+	cv.humidityCompensation.h3 = int32(uint8(read3[2]))
+	cv.humidityCompensation.h4 = int32((int16(read3[3]) << 4) | (int16(read3[4] & 0x0F)))
+	cv.humidityCompensation.h5 = int32((int16(read3[5]) << 4) | (int16(read3[4]) >> 4))
+	cv.humidityCompensation.h6 = int32(read3[6])
 
 	return cv
 }
@@ -167,20 +167,20 @@ func compensation(cv CompensationValues, rawTemp int32, rawPressure int32, rawHu
 	var r Result
 
 	// Temperature compensation (int32)
-	tvar1 := ((rawTemp >> 3) - int32(cv.temperatureCompensation.t1<<1)) * int32(cv.temperatureCompensation.t2)
-	tvar2 := (((rawTemp >> 4) - int32(cv.temperatureCompensation.t1)) * ((rawTemp >> 4) -
-		int32(cv.temperatureCompensation.t1)) >> 12) * int32(cv.temperatureCompensation.t3)
+	tvar1 := ((rawTemp >> 3) - (cv.temperatureCompensation.t1 << 1)) * cv.temperatureCompensation.t2
+	tvar2 := (((rawTemp >> 4) - cv.temperatureCompensation.t1) *
+		((rawTemp >> 4) - cv.temperatureCompensation.t1) >> 12) * cv.temperatureCompensation.t3
 	tFine := (tvar1 >> 11) + (tvar2 >> 14)
 	r.Temperature = ((tFine*5 + 128) >> 8)
 
 	// Pressure compensation (int32)
 	var1 := (tFine >> 1) - 64000
-	var2 := (((var1 >> 2) * (var1 >> 2)) >> 11) * int32(cv.pressureCompensation.p6)
-	var2 = var2 + ((var1 * int32(cv.pressureCompensation.p5)) << 1)
-	var2 = (var2 >> 2) + (int32(cv.pressureCompensation.p4) << 16)
-	var1 = (((int32(cv.pressureCompensation.p3) * (((var1 >> 2) * (var1 >> 2)) >> 13)) >> 3) +
-		((int32(cv.pressureCompensation.p2) * var1) >> 1)) >> 18
-	var1 = ((32768 + var1) * int32(cv.pressureCompensation.p1)) >> 15
+	var2 := (((var1 >> 2) * (var1 >> 2)) >> 11) * cv.pressureCompensation.p6
+	var2 = var2 + ((var1 * cv.pressureCompensation.p5) << 1)
+	var2 = (var2 >> 2) + (cv.pressureCompensation.p4 << 16)
+	var1 = (((cv.pressureCompensation.p3 * (((var1 >> 2) * (var1 >> 2)) >> 13)) >> 3) +
+		((cv.pressureCompensation.p2 * var1) >> 1)) >> 18
+	var1 = ((32768 + var1) * cv.pressureCompensation.p1) >> 15
 	if var1 == 0 {
 		r.Pressure = 0 // avoid exception caused by division by zero
 	} else {
@@ -190,20 +190,20 @@ func compensation(cv CompensationValues, rawTemp int32, rawPressure int32, rawHu
 		} else {
 			p = (p / uint32(var1)) * 2
 		}
-		var1 = (int32(cv.pressureCompensation.p9) * (int32(((p >> 3) * (p >> 3)) >> 13))) >> 12
-		var2 = (int32(p>>2) * int32(cv.pressureCompensation.p8)) >> 13
-		r.Pressure = uint32(int32(p) + ((var1 + var2 + int32(cv.pressureCompensation.p7)) >> 4))
+		var1 = (cv.pressureCompensation.p9 * (int32(((p >> 3) * (p >> 3)) >> 13))) >> 12
+		var2 = (int32(p>>2) * cv.pressureCompensation.p8) >> 13
+		r.Pressure = uint32(int32(p) + ((var1 + var2 + cv.pressureCompensation.p7) >> 4))
 	}
 
 	// Humidity compensation (int32)
 	v_x1_u32r := tFine - 76800
-	v_x1_u32r = (((((rawHumidity << 14) - (int32(cv.humidityCompensation.h4) << 20) -
-		(int32(cv.humidityCompensation.h5) * v_x1_u32r)) + 16384) >> 15) *
-		(((((((v_x1_u32r*int32(cv.humidityCompensation.h6))>>10)*
-			(((v_x1_u32r*int32(cv.humidityCompensation.h3))>>11)+32768))>>10)+2097152)*
-			int32(cv.humidityCompensation.h2) + 8192) >> 14))
+	v_x1_u32r = (((((rawHumidity << 14) - (cv.humidityCompensation.h4 << 20) -
+		(cv.humidityCompensation.h5 * v_x1_u32r)) + 16384) >> 15) *
+		(((((((v_x1_u32r*cv.humidityCompensation.h6)>>10)*
+			(((v_x1_u32r*cv.humidityCompensation.h3)>>11)+32768))>>10)+2097152)*
+			cv.humidityCompensation.h2 + 8192) >> 14))
 
-	v_x1_u32r = v_x1_u32r - (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) * int32(cv.humidityCompensation.h1)) >> 4)
+	v_x1_u32r = v_x1_u32r - (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) * cv.humidityCompensation.h1) >> 4)
 	if v_x1_u32r < 0 {
 		fmt.Printf("Humidity value too small: %d\n", v_x1_u32r)
 		v_x1_u32r = 0
