@@ -12,21 +12,25 @@ import (
 )
 
 // The I2C address which this device listens to.
-const Address = 0x76
+const I2cAddress = 0x76
+
+// Http port for web server
+const Port = 8082
 
 func initHttp() {
-	log.Print("init Http")
+	log.Print("Http: Init")
 	http.HandleFunc("/", chart.Httpserver)
 	go func() {
-		log.Print("Http start listening")
-		log.Fatal(http.ListenAndServe(":8082", nil))
+		addr := fmt.Sprintf(":%d", Port)
+		log.Printf("Http: Start listening on %s", addr)
+		log.Fatal(http.ListenAndServe(addr, nil))
 	}()
 }
 
 func main() {
 	initHttp()
 
-	d, err := bme280.InitBme280(Address)
+	d, err := bme280.InitBme280(I2cAddress)
 	if err != nil {
 		log.Fatal(err)
 		return

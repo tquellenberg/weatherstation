@@ -1,8 +1,8 @@
 package bme280
 
 import (
-	"fmt"
 	"log"
+	"time"
 
 	"periph.io/x/periph/conn/i2c"
 	"periph.io/x/periph/conn/i2c/i2creg"
@@ -31,7 +31,9 @@ const (
 	REG_CALIBRATION    = 0x88
 	REG_CALIBRATION_H1 = 0xA1
 	REG_CALIBRATION_H2 = 0xE1
-	CMD_RESET          = 0xE0
+	REG_RESET          = 0xE0
+
+	CMD_RESET = 0xB6
 
 	WHO_AM_I = 0xD0
 	CHIP_ID  = 0x60
@@ -84,8 +86,17 @@ func writeReadTx(d *i2c.Dev, b byte, size int) []byte {
 
 func devCheck(d *i2c.Dev) {
 	read := writeReadTx(d, WHO_AM_I, 1)
-	log.Printf("%#x\n", read[0])
-	log.Printf("%v\n", read)
+	if read[0] == CHIP_ID {
+		log.Printf("Device is Bme280")
+	} else {
+		log.Fatalf("Device is not Bme280 (%#x)", read[0])
+	}
+}
+
+func reset(d *i2c.Dev) {
+	log.Println("Bme280: Reset")
+	d.Write([]byte{REG_RESET, CMD_RESET})
+	time.Sleep(2 * time.Second)
 }
 
 // unsigned int from two bytes (little-endian)
@@ -99,6 +110,7 @@ func int16LE(b0 byte, b1 byte) int16 {
 }
 
 func readCompensationValues(dev *i2c.Dev) CompensationValues {
+	log.Println("Bme280: Read compensation values")
 	var cv CompensationValues
 
 	read := writeReadTx(dev, REG_CALIBRATION, 24)
@@ -130,35 +142,37 @@ func readCompensationValues(dev *i2c.Dev) CompensationValues {
 }
 
 func (d *BME280) SetConfiguration() {
-	// oversampling ×1
-	d.dev.Write([]byte{CTRL_HUMIDITY_ADDR, 0x01})
+	log.Println("Bme280: Set configuration")
+	// oversampling humidity ×1
+	OVERSAMPLE_HUMI := 1
+	d.dev.Write([]byte{CTRL_HUMIDITY_ADDR, byte(OVERSAMPLE_HUMI)})
 
-	// Pressure oversampling x1   Temperature oversampling x1, Forced mode
 	read := writeReadTx(d.dev, CTRL_MEAS_ADDR, 1)
-	fmt.Printf("CTRL_MEAS_ADDR: %#x\n", read[0])
+	oldSstate := read[0]
+
+	// Pressure oversampling x1, Temperature oversampling x1, Forced mode
 	OVERSAMPLE_TEMP := 1
 	OVERSAMPLE_PRES := 1
 	MODE := 1
 	control := OVERSAMPLE_TEMP<<5 | OVERSAMPLE_PRES<<2 | MODE
 	d.dev.Write([]byte{CTRL_MEAS_ADDR, byte(control)})
-	read2 := writeReadTx(d.dev, CTRL_MEAS_ADDR, 1)
-	fmt.Printf("CTRL_MEAS_ADDR: %#x\n", read2[0])
+	writeReadTx(d.dev, CTRL_MEAS_ADDR, 1)
 
 	// Filter OFF
 	d.dev.Write([]byte{CTRL_CONFIG, 0x00})
+
+	if oldSstate == 0 {
+		time.Sleep(time.Second)
+	}
 }
 
 func (d *BME280) ReadValues() Result {
+	log.Println("Bme280: Read values")
 	read4 := writeReadTx(d.dev, REG_PRESSURE, 8)
 
 	rawPressure := int32((uint32(read4[0]) << 12) | (uint32(read4[1]) << 4) | (uint32(read4[2]) >> 4))
-	fmt.Printf("raw Pressure: %d\n", rawPressure)
-
 	rawTemp := int32((uint32(read4[3]) << 12) | (uint32(read4[4]) << 4) | (uint32(read4[5]) >> 4))
-	fmt.Printf("raw Temp: %d\n", rawTemp)
-
 	rawHumidity := int32((uint32(read4[6]) << 8) | uint32(read4[7]))
-	fmt.Printf("raw Humidity: %d\n", rawHumidity)
 
 	return compensation(d.cv, rawTemp, rawPressure, rawHumidity)
 }
@@ -205,11 +219,11 @@ func compensation(cv CompensationValues, rawTemp int32, rawPressure int32, rawHu
 
 	v_x1_u32r = v_x1_u32r - (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) * cv.humidityCompensation.h1) >> 4)
 	if v_x1_u32r < 0 {
-		fmt.Printf("Humidity value too small: %d\n", v_x1_u32r)
+		log.Printf("Bme280: Humidity value too small: %d\n", v_x1_u32r)
 		v_x1_u32r = 0
 	}
 	if v_x1_u32r > 419430400 {
-		fmt.Printf("Humidity value too big: %d\n", v_x1_u32r)
+		log.Printf("Bme280: Humidity value too big: %d\n", v_x1_u32r)
 		v_x1_u32r = 419430400
 	}
 	r.Humidity = uint32(v_x1_u32r >> 12)
@@ -218,14 +232,14 @@ func compensation(cv CompensationValues, rawTemp int32, rawPressure int32, rawHu
 }
 
 func InitBme280(address int) (*BME280, error) {
-	log.Print("init Bme280")
+	log.Print("Bme280: Init")
 
 	// Make sure periph is initialized.
 	if _, err := host.Init(); err != nil {
 		log.Fatal(err)
 		return nil, err
 	}
-	log.Print("host okay")
+	log.Print("Bme280: Host okay")
 
 	// Use i2creg I²C bus registry to find the first available I²C bus.
 	b, err := i2creg.Open("")
@@ -233,13 +247,14 @@ func InitBme280(address int) (*BME280, error) {
 		log.Fatal(err)
 		return nil, err
 	}
-	log.Print("i2c okay")
+	log.Print("Bme280: I2C okay")
 	// defer b.Close()
 
 	// Dev is a valid conn.Conn.
 	d := &i2c.Dev{Addr: uint16(address), Bus: b}
 
 	devCheck(d)
+	reset(d)
 
 	compensationValues := readCompensationValues(d)
 
