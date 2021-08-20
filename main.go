@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,25 +29,34 @@ func initHttp() {
 }
 
 func main() {
+	noDataReading := flag.Bool("noDataReading", false, "do not read new values")
+	flag.Parse()
+
 	initHttp()
 
-	d, err := bme280.InitBme280(I2cAddress)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	time.Sleep(time.Second)
+	if *noDataReading {
+		log.Print("No new data is read.")
+		// wait forever
+		select {}
+	} else {
+		d, err := bme280.InitBme280(I2cAddress)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		time.Sleep(time.Second)
 
-	for {
-		d.SetConfiguration()
-		v := d.ReadValues()
+		for {
+			d.SetConfiguration()
+			v := d.ReadValues()
 
-		fmt.Printf("Temp: %3.2f Grad C\n", float32(v.Temperature)/100.0)
-		fmt.Printf("Pres: %4.2f hPa\n", float32(v.Pressure)/100.0)
-		fmt.Printf("Humi: %3.2f %%\n", float32(v.Humidity)/1024.0)
+			fmt.Printf("Temp: %3.2f Grad C\n", float32(v.Temperature)/100.0)
+			fmt.Printf("Pres: %4.2f hPa\n", float32(v.Pressure)/100.0)
+			fmt.Printf("Humi: %3.2f %%\n", float32(v.Humidity)/1024.0)
 
-		datastore.AppendToStore(v)
+			datastore.AppendToStore(v)
 
-		time.Sleep(time.Minute)
+			time.Sleep(time.Minute)
+		}
 	}
 }
