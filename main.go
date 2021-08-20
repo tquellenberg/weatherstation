@@ -30,12 +30,15 @@ func initHttp() {
 
 func main() {
 	noDataReading := flag.Bool("noDataReading", false, "do not read new values")
+	dataDir := flag.String("dataDir", "./data", "directory for storing data files")
 	flag.Parse()
+
+	datastore.SetDataDir(*dataDir)
 
 	initHttp()
 
 	if *noDataReading {
-		log.Print("No new data is read.")
+		log.Print("No new data will be read.")
 		// wait forever
 		select {}
 	} else {

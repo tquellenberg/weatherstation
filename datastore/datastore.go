@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"encoding/csv"
@@ -12,22 +13,38 @@ import (
 	"github.com/tquellenberg/weatherstation/bme280"
 )
 
-const Filename = "results.csv"
-
 const DateTimeFormat = "2006-01-02 15:04:05"
+
+var dataDir string = "."
+var filename = "results.csv"
 
 type Entry struct {
 	Time  string
 	Value float32
 }
 
+func SetDataDir(newDataDir string) {
+	dataDir = newDataDir
+	dataDir = strings.TrimSuffix(dataDir, "/")
+	if dataDir != "" && dataDir != "." {
+		err := os.MkdirAll(dataDir, os.ModePerm)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	log.Printf("Data directory set to %s", dataDir)
+}
+
+func getFilename() string {
+	return dataDir + "/" + filename
+}
 func AppendToStore(res bme280.Result) {
 	column := []string{time.Now().Format(DateTimeFormat),
 		fmt.Sprintf("%3.2f", float32(res.Temperature)/100.0),
 		fmt.Sprintf("%4.2f", float32(res.Pressure)/100.0),
 		fmt.Sprintf("%3.2f", float32(res.Humidity)/1024.0)}
 
-	f, err := os.OpenFile(Filename, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile(getFilename(), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Println("Error: ", err)
 		return
@@ -40,7 +57,7 @@ func AppendToStore(res bme280.Result) {
 
 func GetTemperatureSeries() ([]Entry, error) {
 	log.Println("Get temperature series")
-	f, err := os.OpenFile(Filename, os.O_RDONLY, 0644)
+	f, err := os.OpenFile(getFilename(), os.O_RDONLY, 0644)
 	if err != nil {
 		log.Println("Error: ", err)
 		return nil, err
