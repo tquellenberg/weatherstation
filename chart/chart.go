@@ -12,28 +12,12 @@ import (
 	"github.com/tquellenberg/weatherstation/datastore"
 )
 
-func generateLineItems(values []float32) []opts.LineData {
-	items := make([]opts.LineData, 0)
-	for _, v := range values {
-		items = append(items, opts.LineData{Value: v})
+func generateLineItems(entries []datastore.Entry) []opts.LineData {
+	items := make([]opts.LineData, 0, len(entries))
+	for _, v := range entries {
+		items = append(items, opts.LineData{Value: []interface{}{v.Time, v.Value}, Symbol: "none"})
 	}
 	return items
-}
-
-func values(entries []datastore.Entry) []float32 {
-	var s []float32
-	for _, v := range entries {
-		s = append(s, v.Value)
-	}
-	return s
-}
-
-func timeValues(entries []datastore.Entry) []string {
-	var s []string
-	for _, v := range entries {
-		s = append(s, v.Time)
-	}
-	return s
 }
 
 func Httpserver(w http.ResponseWriter, _ *http.Request) {
@@ -53,11 +37,13 @@ func Httpserver(w http.ResponseWriter, _ *http.Request) {
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Weather Station",
 			Subtitle: "Temperatur",
-		}))
+		}),
+		charts.WithXAxisOpts(opts.XAxis{Type: "time"}),
+		charts.WithYAxisOpts(opts.YAxis{Min: "dataMin", Max: "dataMax"}, 0))
 
 	// Put data into instance
-	line.SetXAxis(timeValues(data)).
-		AddSeries("Temperatur in Grade Celsius", generateLineItems(values(data))).
+	line.
+		AddSeries("Temperatur in Grade Celsius", generateLineItems(data)).
 		SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: true}))
 	line.Render(w)
 
