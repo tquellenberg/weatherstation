@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/types"
 
@@ -20,32 +21,49 @@ func generateLineItems(entries []datastore.Entry) []opts.LineData {
 	return items
 }
 
-func Httpserver(w http.ResponseWriter, _ *http.Request) {
-	log.Println("Httpserver Request")
-
-	data, err := datastore.GetTemperatureSeries()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
+func lineChart(name string, data []datastore.Entry) *charts.Line {
 	// create a new line instance
 	line := charts.NewLine()
 	// set some global options like Title/Legend/ToolTip or anything else
 	line.SetGlobalOptions(
 		charts.WithInitializationOpts(opts.Initialization{Theme: types.ThemeWesteros}),
-		charts.WithTitleOpts(opts.Title{
-			Title:    "Weather Station",
-			Subtitle: "Temperatur",
-		}),
+		charts.WithTitleOpts(opts.Title{Title: name}),
 		charts.WithXAxisOpts(opts.XAxis{Type: "time"}),
 		charts.WithYAxisOpts(opts.YAxis{Min: "dataMin", Max: "dataMax"}, 0))
-
 	// Put data into instance
 	line.
-		AddSeries("Temperatur in Grade Celsius", generateLineItems(data)).
+		AddSeries(name, generateLineItems(data)).
 		SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: true}))
-	line.Render(w)
+	return line
+}
+
+func Httpserver(w http.ResponseWriter, _ *http.Request) {
+	log.Println("Httpserver Request")
+
+	tData, err := datastore.GetTemperatureSeries()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	pData, err := datastore.GetPressureSeries()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	hData, err := datastore.GetHumiditySeries()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	page := components.NewPage()
+	page.AddCharts(
+		lineChart("Temperatur", tData),
+		lineChart("Pressure", pData),
+		lineChart("Humidity", hData))
+	page.Render(w)
 
 	log.Println("Httpserver Request OKAY")
 }

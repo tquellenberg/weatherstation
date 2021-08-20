@@ -57,6 +57,36 @@ func AppendToStore(res bme280.Result) {
 
 func GetTemperatureSeries() ([]Entry, error) {
 	log.Println("Get temperature series")
+	result, err := getDataFromFile(1)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Get temperature series %d", len(result))
+	return result, nil
+}
+
+func GetPressureSeries() ([]Entry, error) {
+	log.Println("Get pressure series")
+	result, err := getDataFromFile(2)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Get pressure series %d", len(result))
+	return result, nil
+}
+
+func GetHumiditySeries() ([]Entry, error) {
+	log.Println("Get humidity series")
+	result, err := getDataFromFile(3)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Get humidity series %d", len(result))
+	return result, nil
+}
+
+// Read time (first value) and value on position 'pos' from csv file
+func getDataFromFile(pos int) ([]Entry, error) {
 	f, err := os.OpenFile(getFilename(), os.O_RDONLY, 0644)
 	if err != nil {
 		log.Println("Error: ", err)
@@ -75,12 +105,11 @@ func GetTemperatureSeries() ([]Entry, error) {
 	for _, line := range lines {
 		e := Entry{}
 		e.Time = line[0]
-		if v, err = strconv.ParseFloat(line[1], 32); err != nil {
+		if v, err = strconv.ParseFloat(line[pos], 32); err != nil {
 			return nil, err
 		}
 		e.Value = float32(v)
 		result = append(result, e)
 	}
-	log.Printf("Get temperature series %d", len(result))
 	return result, nil
 }
