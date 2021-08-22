@@ -79,7 +79,7 @@ func writeReadTx(d *i2c.Dev, b byte, size int) []byte {
 	write := []byte{b}
 	read := make([]byte, size)
 	if err := d.Tx(write, read); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	return read
 }
@@ -89,7 +89,7 @@ func devCheck(d *i2c.Dev) {
 	if read[0] == CHIP_ID {
 		log.Printf("Device is Bme280")
 	} else {
-		log.Fatalf("Device is not Bme280 (%#x)", read[0])
+		log.Printf("Device is not Bme280 (%#x)", read[0])
 	}
 }
 
@@ -236,7 +236,7 @@ func InitBme280(address int) (*BME280, error) {
 
 	// Make sure periph is initialized.
 	if _, err := host.Init(); err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return nil, err
 	}
 	log.Print("Bme280: Host okay")
@@ -244,7 +244,7 @@ func InitBme280(address int) (*BME280, error) {
 	// Use i2creg I²C bus registry to find the first available I²C bus.
 	b, err := i2creg.Open("")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return nil, err
 	}
 	log.Print("Bme280: I2C okay")

@@ -11,6 +11,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/types"
 
 	"github.com/tquellenberg/weatherstation/datastore"
+	"github.com/tquellenberg/weatherstation/sun"
 )
 
 func generateLineItems(entries []datastore.Entry) []opts.LineData {
@@ -31,9 +32,16 @@ func lineChart(name string, data []datastore.Entry) *charts.Line {
 		charts.WithXAxisOpts(opts.XAxis{Type: "time"}),
 		charts.WithYAxisOpts(opts.YAxis{Min: "dataMin", Max: "dataMax"}, 0))
 	// Put data into instance
+	sunrise, sunset := sun.GetDayInfo()
 	line.
 		AddSeries(name, generateLineItems(data)).
-		SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: true}))
+		SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: true}),
+			charts.WithMarkLineNameXAxisItemOpts(opts.MarkLineNameXAxisItem{
+				Name:  "sunrise",
+				XAxis: sunrise.Format(datastore.DateTimeFormat)}),
+			charts.WithMarkLineNameXAxisItemOpts(opts.MarkLineNameXAxisItem{
+				Name:  "sunset",
+				XAxis: sunset.Format(datastore.DateTimeFormat)}))
 	return line
 }
 
@@ -42,19 +50,19 @@ func Httpserver(w http.ResponseWriter, _ *http.Request) {
 
 	tData, err := datastore.GetTemperatureSeries()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return
 	}
 
 	pData, err := datastore.GetPressureSeries()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return
 	}
 
 	hData, err := datastore.GetHumiditySeries()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return
 	}
 

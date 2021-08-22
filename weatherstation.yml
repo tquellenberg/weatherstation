@@ -1,0 +1,16 @@
+position:
+  latitude: 53.648765
+  longitude: 10.162776
+
+bme280:
+  i2caddress: 0x76
+
+http:
+  port: 8082
+
+opensenseMap:
+  boxId: 6120e07bfed2a1001b54e8da
+  tempSensor: 6120e07bfed2a1001b54e8dd
+  presSensor: 6120e07bfed2a1001b54e8db
+  humiSensor: 6120e07bfed2a1001b54e8dc
+
