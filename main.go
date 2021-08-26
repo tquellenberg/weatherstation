@@ -77,11 +77,11 @@ func readConfig() Config {
 }
 
 func sendOpensensemapData(opensensemapToken *string, v bme280.Result, config *Config) {
-	opensensemap.PostFloatValue(*opensensemapToken, float32(v.Temperature)/100.0, 2,
+	opensensemap.PostFloatValue(*opensensemapToken, v.Temperature, 2,
 		config.OpensenseMap.BoxId, config.OpensenseMap.TempSensor)
-	opensensemap.PostFloatValue(*opensensemapToken, float32(v.Pressure)/100.0, 1,
+	opensensemap.PostFloatValue(*opensensemapToken, v.Pressure, 1,
 		config.OpensenseMap.BoxId, config.OpensenseMap.PresSensor)
-	opensensemap.PostFloatValue(*opensensemapToken, float32(v.Humidity)/1024.0, 1,
+	opensensemap.PostFloatValue(*opensensemapToken, v.Humidity, 1,
 		config.OpensenseMap.BoxId, config.OpensenseMap.HumiSensor)
 }
 
@@ -114,18 +114,20 @@ func main() {
 
 		for {
 			d.SetConfiguration()
-			v := d.ReadValues()
+			v, err := d.ReadValues()
+			if err != nil {
+				log.Printf("Skip invalid values %v", err)
+			} else {
+				fmt.Printf("Temp: %3.2f Grad C\n", v.Temperature)
+				fmt.Printf("Pres: %4.2f hPa\n", v.Pressure)
+				fmt.Printf("Humi: %3.2f %%\n", v.Humidity)
 
-			fmt.Printf("Temp: %3.2f Grad C\n", float32(v.Temperature)/100.0)
-			fmt.Printf("Pres: %4.2f hPa\n", float32(v.Pressure)/100.0)
-			fmt.Printf("Humi: %3.2f %%\n", float32(v.Humidity)/1024.0)
+				datastore.AppendToStore(v)
 
-			datastore.AppendToStore(v)
-
-			if *opensensemapToken != "" {
-				sendOpensensemapData(opensensemapToken, v, &config)
+				if *opensensemapToken != "" {
+					go sendOpensensemapData(opensensemapToken, v, &config)
+				}
 			}
-
 			time.Sleep(time.Minute)
 		}
 	}

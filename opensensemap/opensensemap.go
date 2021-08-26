@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 const SERVER = "ingress.opensensemap.org"
@@ -19,10 +20,12 @@ func PostFloatValue(apiToken string, measurement float32, digits int, boxId stri
 	req.Header.Add("Authorization", apiToken)
 	req.Header.Add("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Panic(err)
+		log.Print(err)
 		return
 	}
 	defer resp.Body.Close()

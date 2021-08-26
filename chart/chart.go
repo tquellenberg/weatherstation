@@ -27,9 +27,9 @@ func lineChart(name string, data []datastore.Entry) *charts.Line {
 	line := charts.NewLine()
 	// set some global options like Title/Legend/ToolTip or anything else
 	line.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{Theme: types.ThemeWesteros}),
+		charts.WithInitializationOpts(opts.Initialization{Theme: types.ThemeWonderland, Height: "300px"}),
 		charts.WithTitleOpts(opts.Title{Title: name}),
-		charts.WithXAxisOpts(opts.XAxis{Type: "time"}),
+		charts.WithXAxisOpts(opts.XAxis{Type: "time", SplitNumber: 12}),
 		charts.WithYAxisOpts(opts.YAxis{Min: "dataMin", Max: "dataMax"}, 0))
 	// Put data into instance
 	sunrise, sunset := sun.GetDayInfo()
@@ -68,7 +68,7 @@ func Httpserver(w http.ResponseWriter, _ *http.Request) {
 
 	page := components.NewPage()
 	page.AddCharts(
-		lineChart("Temperatur", tData),
+		lineChart("Temperature", tData),
 		lineChart("Pressure", pData),
 		lineChart("Humidity", hData))
 	page.Render(w)

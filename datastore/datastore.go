@@ -47,9 +47,9 @@ func getFilename() string {
 }
 func AppendToStore(res bme280.Result) {
 	column := []string{time.Now().Format(DateTimeFormat),
-		fmt.Sprintf("%3.2f", float32(res.Temperature)/100.0),
-		fmt.Sprintf("%4.2f", float32(res.Pressure)/100.0),
-		fmt.Sprintf("%3.2f", float32(res.Humidity)/1024.0)}
+		fmt.Sprintf("%3.2f", res.Temperature),
+		fmt.Sprintf("%4.2f", res.Pressure),
+		fmt.Sprintf("%3.2f", res.Humidity)}
 
 	f, err := os.OpenFile(getFilename(), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {

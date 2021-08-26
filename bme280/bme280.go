@@ -1,6 +1,7 @@
 package bme280
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -69,10 +70,16 @@ type CompensationValues struct {
 	humidityCompensation    HumidityCompensation
 }
 
-type Result struct {
+type rawResult struct {
 	Temperature int32
 	Pressure    uint32
 	Humidity    uint32
+}
+
+type Result struct {
+	Temperature float32
+	Pressure    float32
+	Humidity    float32
 }
 
 func writeReadTx(d *i2c.Dev, b byte, size int) []byte {
@@ -166,7 +173,7 @@ func (d *BME280) SetConfiguration() {
 	}
 }
 
-func (d *BME280) ReadValues() Result {
+func (d *BME280) ReadValues() (Result, error) {
 	log.Println("Bme280: Read values")
 	read4 := writeReadTx(d.dev, REG_PRESSURE, 8)
 
@@ -174,11 +181,13 @@ func (d *BME280) ReadValues() Result {
 	rawTemp := int32((uint32(read4[3]) << 12) | (uint32(read4[4]) << 4) | (uint32(read4[5]) >> 4))
 	rawHumidity := int32((uint32(read4[6]) << 8) | uint32(read4[7]))
 
-	return compensation(d.cv, rawTemp, rawPressure, rawHumidity)
+	result := toResult(compensation(d.cv, rawTemp, rawPressure, rawHumidity))
+
+	return sanityCheck(result)
 }
 
-func compensation(cv CompensationValues, rawTemp int32, rawPressure int32, rawHumidity int32) Result {
-	var r Result
+func compensation(cv CompensationValues, rawTemp int32, rawPressure int32, rawHumidity int32) rawResult {
+	var r rawResult
 
 	// Temperature compensation (int32)
 	tvar1 := ((rawTemp >> 3) - (cv.temperatureCompensation.t1 << 1)) * cv.temperatureCompensation.t2
@@ -229,6 +238,20 @@ func compensation(cv CompensationValues, rawTemp int32, rawPressure int32, rawHu
 	r.Humidity = uint32(v_x1_u32r >> 12)
 
 	return r
+}
+
+func toResult(rawResult rawResult) (result Result) {
+	result.Temperature = float32(rawResult.Temperature) / 100.0
+	result.Humidity = float32(rawResult.Humidity) / 1024.0
+	result.Pressure = float32(rawResult.Pressure) / 100.0
+	return result
+}
+
+func sanityCheck(result Result) (Result, error) {
+	if result.Temperature < -100.0 || result.Temperature > 100.0 {
+		return result, fmt.Errorf("temperature out of valid range %0.2f", result.Temperature)
+	}
+	return result, nil
 }
 
 func InitBme280(address int) (*BME280, error) {
