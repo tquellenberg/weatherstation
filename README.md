@@ -6,5 +6,5 @@ The collected data is displayed in charts on a small web page.
 ### Used Libraries
 
 * [periph.io](https://periph.io/): Peripherals I/O in Go
-* [go-echarts](https://github.com/go-echarts/go-echarts): The adorable charts library for Golang
 * [go-sunrise](https://github.com/nathan-osman/go-sunrise): Go package for calculating the sunrise and sunset times for a given location
+* [ECharts](https://echarts.apache.org/en/index.html): An Open Source JavaScript Visualization Library
