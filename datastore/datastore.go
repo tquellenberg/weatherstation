@@ -23,6 +23,20 @@ type Entry struct {
 	Value float32
 }
 
+// Position in CSV file
+type CsvPos int
+
+const (
+	DatePos CsvPos = iota
+	TemperaturePos
+	PressurePos
+	HumidityPos
+)
+
+func (pos CsvPos) String() string {
+	return []string{"date", "temperature", "pressure", "humidity"}[pos]
+}
+
 func SetDataDir(newDataDir string) {
 	dataDir = newDataDir
 	dataDir = strings.TrimSuffix(dataDir, "/")
@@ -38,6 +52,7 @@ func SetDataDir(newDataDir string) {
 func getFilename() string {
 	return dataDir + "/" + filename
 }
+
 func AppendToStore(res bme280.Result) {
 	column := []string{time.Now().Format(DateTimeFormat),
 		fmt.Sprintf("%3.2f", res.Temperature),
@@ -56,32 +71,24 @@ func AppendToStore(res bme280.Result) {
 }
 
 func GetTemperatureSeries(start, end time.Time) ([]Entry, error) {
-	log.Println("Get temperature series")
-	result, err := getDataFromFile(start, end, 1)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Get temperature series %d", len(result))
-	return movingAvg(result, 5), nil
+	return getDataSeries(start, end, TemperaturePos)
 }
 
 func GetPressureSeries(start, end time.Time) ([]Entry, error) {
-	log.Println("Get pressure series")
-	result, err := getDataFromFile(start, end, 2)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Get pressure series %d", len(result))
-	return movingAvg(result, 5), nil
+	return getDataSeries(start, end, PressurePos)
 }
 
 func GetHumiditySeries(start, end time.Time) ([]Entry, error) {
-	log.Println("Get humidity series")
-	result, err := getDataFromFile(start, end, 3)
+	return getDataSeries(start, end, HumidityPos)
+}
+
+func getDataSeries(start, end time.Time, csvPos CsvPos) ([]Entry, error) {
+	log.Printf("Get %s series", csvPos)
+	result, err := getDataFromFile(start, end, csvPos)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Get humidity series %d", len(result))
+	log.Printf("Get %s series %d", csvPos, len(result))
 	return movingAvg(result, 5), nil
 }
 
@@ -129,7 +136,7 @@ func avg(sumV float64, counter int) float32 {
 }
 
 // Read time (first value) and value on position 'pos' from csv file
-func getDataFromFile(start, end time.Time, pos int) ([]Entry, error) {
+func getDataFromFile(start, end time.Time, pos CsvPos) ([]Entry, error) {
 	f, err := os.OpenFile(getFilename(), os.O_RDONLY, 0644)
 	if err != nil {
 		log.Println("Error: ", err)
@@ -147,7 +154,7 @@ func getDataFromFile(start, end time.Time, pos int) ([]Entry, error) {
 	now := time.Now()
 	var v float64
 	for _, line := range lines {
-		t, _ := time.ParseInLocation(DateTimeFormat, line[0], now.Location())
+		t, _ := time.ParseInLocation(DateTimeFormat, line[DatePos], now.Location())
 		if t.Local().After(start) && t.Local().Before(end) {
 			e := Entry{}
 			e.Time = line[0]
