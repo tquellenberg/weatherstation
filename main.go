@@ -43,6 +43,9 @@ const DEFAULT_HTTP_PORT = 8082
 
 func initHttp(port int) {
 	log.Print("Http: Init")
+	http.HandleFunc("/temperatureData", chart.TempData)
+	http.HandleFunc("/pressureData", chart.PressureData)
+	http.HandleFunc("/humidityData", chart.HumidityData)
 	http.HandleFunc("/", chart.Index)
 	go func() {
 		addr := fmt.Sprintf(":%d", port)

@@ -5,6 +5,7 @@
     <title>Tom's Weather Station</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.1.2/echarts.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.1.2/theme/infographic.min.js"></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<style>
 		.container {display: flex; justify-content: center; align-items: center;}
 		.item {margin: auto;}
@@ -17,9 +18,8 @@
     <div class="item" id="temperatureChartId" style="width:900px;height:300px;"></div>
 </div>
 <script type="text/javascript">
-    "use strict";
-    let echarts_temperature = echarts.init(document.getElementById('temperatureChartId'));
-    let option_temperature = {
+    var echarts_temperature = echarts.init(document.getElementById('temperatureChartId'));
+    var option_temperature = {
 		"title":{"text":"Temperature"},
 		"tooltip":{
 			trigger: 'axis',
@@ -39,7 +39,7 @@
 			"type":"time",
 			"splitNumber":10,
 			"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
-		"yAxis":[{"min":"dataMin","max":"dataMax"}],
+		"yAxis":[{type: "value", min:"dataMin", max:"dataMax"}],
 		"legend":{"show":false},
 		"series":[{
 			"name":"Temperature",
@@ -49,12 +49,8 @@
 			"selectedMode":true,
 			"animation":true,
 			showSymbol: false,
-			"data":[
-			{{ range $i, $v := .Temperature.Values -}}
-				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}]}
-			{{ end }}
-			],
-			"markLine":{
+			data: [],
+			markLine:{
 				label: {
 					formatter: "{b}"
 				},
@@ -64,15 +60,22 @@
 			}]
 	};
 	echarts_temperature.setOption(option_temperature);
+	$.get("/temperatureData?range={{.TimeRange}}", function(data) {
+		echarts_temperature.setOption({
+			series: [{
+				data: data
+			}]
+		});
+	})
 </script>
+
 
 <div class="container">
     <div class="item" id="presssureChartId" style="width:900px;height:300px;"></div>
 </div>
 <script type="text/javascript">
-    "use strict";
-    let echarts_presssure = echarts.init(document.getElementById('presssureChartId'));
-    let option_presssure = {
+    var echarts_presssure = echarts.init(document.getElementById('presssureChartId'));
+    var option_presssure = {
 		"title":{"text":"Pressure"},
 		"tooltip":{"show":false},
 		"xAxis":[{"type":"time","splitNumber":10,"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
@@ -86,11 +89,7 @@
 			"selectedMode":false,
 			"animation":false,
 			showSymbol: false,
-			"data":[
-			{{ range $i, $v := .Pressure.Values -}}
-				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}]}
-			{{ end }}
-			],
+			"data":[],
 			"markLine":{
 				label: {
 					formatter: "{b}"
@@ -100,15 +99,30 @@
 					{"name":"Sunset","xAxis":"{{ .Sunset }}"}]}
 			}]};
 	echarts_presssure.setOption(option_presssure);
+	$.get("/pressureData?range={{.TimeRange}}", function(data) {
+		echarts_presssure.setOption({
+			series: [{
+				data: data
+			}]
+		});
+		currentValue = data[data.length-1].value[1]
+		pressure_gauge.setOption({
+			series: [{
+				data: [{
+            		value: currentValue,
+            		name: 'hPa'
+        		}]
+			}]
+		});
+	})
 </script>
 
 <div class="container">
 	<div class="item" id="pressureGaugeId" style="width:400px;height:400px;"></div>
 </div>
 <script type="text/javascript">
-    "use strict";
-    let pressure_gauge = echarts.init(document.getElementById('pressureGaugeId'));
-    let option_pressure_gauge = {
+    var pressure_gauge = echarts.init(document.getElementById('pressureGaugeId'));
+    var option_pressure_gauge = {
 		tooltip: {
         	formatter: '{a} <br/>{b} : {c}'
     	},
@@ -120,10 +134,7 @@
         	detail: {
             	formatter: '{value}'
         	},
-        	data: [{
-            	value: Number("{{ .Pressure.LastValue }}").toFixed(1),
-            	name: 'hPa'
-        	}]
+        	data: []
     	}]
 	};
 	pressure_gauge.setOption(option_pressure_gauge);
@@ -133,9 +144,8 @@
     <div class="item" id="humidityChartId" style="width:900px;height:300px;"></div>
 </div>
 <script type="text/javascript">
-    "use strict";
-    let echarts_humidity = echarts.init(document.getElementById('humidityChartId'));
-    let option_humidity = {
+    var echarts_humidity = echarts.init(document.getElementById('humidityChartId'));
+    var option_humidity = {
 		"title":{"text":"Humidity"},
 		"tooltip":{
 			trigger: 'axis',
@@ -162,11 +172,7 @@
 			"selectedMode":false,
 			"animation":false,
 			showSymbol: false,
-			"data":[
-			{{ range $i, $v := .Humidity.Values -}}
-				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}]}
-			{{ end }}
-			],
+			"data":[],
 			"markLine":{
 				label: {
 					formatter: "{b}"
@@ -176,7 +182,16 @@
 					{"name":"Sunset","xAxis":"{{ .Sunset }}"}]}
 			}]};
 	echarts_humidity.setOption(option_humidity);
+	$.get("/humidityData?range={{.TimeRange}}", function(data) {
+		echarts_humidity.setOption({
+			series: [{
+				data: data
+			}]
+		});
+	})
 </script>
+
+
 
 </body>
 </html>
