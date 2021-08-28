@@ -21,7 +21,8 @@ type PageData struct {
 }
 
 type ChartData struct {
-	Values []Value
+	Values    []Value
+	LastValue float32
 }
 
 type Value struct {
@@ -29,43 +30,64 @@ type Value struct {
 	Value float32
 }
 
-func Index(w http.ResponseWriter, _ *http.Request) {
+func Index(w http.ResponseWriter, req *http.Request) {
+	param1 := req.URL.Query().Get("range")
+	xRange := 0
+	switch param1 {
+	case "week":
+		xRange = 1
+	default:
+		xRange = 0
+	}
+
 	now := time.Now()
 	year, month, day := now.Date()
-	xstart := time.Date(year, month, day, 0, 0, 0, 0, now.Location()).Format(datastore.DateTimeFormat)
-	xend := time.Date(year, month, day, 23, 59, 55, 0, now.Location()).Format(datastore.DateTimeFormat)
+	xstart := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+	if xRange == 1 {
+		xstart = xstart.AddDate(0, 0, -6)
+	}
+	xend := time.Date(year, month, day, 23, 59, 55, 0, now.Location())
 	sunrise, sunset := sun.GetDayInfo()
 	data := PageData{
 		Sunrise: sunrise.Format(datastore.DateTimeFormat),
 		Sunset:  sunset.Format(datastore.DateTimeFormat),
-		Xstart:  xstart, Xend: xend}
+		Xstart:  xstart.Format(datastore.DateTimeFormat), Xend: xend.Format(datastore.DateTimeFormat)}
 
-	tData, err := datastore.GetTemperatureSeries()
+	tData, err := datastore.GetTemperatureSeries(xstart, xend)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	values := []Value{}
 	for _, v := range tData {
-		data.Temperature.Values = append(data.Temperature.Values, Value{Time: v.Time, Value: v.Value})
+		values = append(values, Value{Time: v.Time, Value: v.Value})
 	}
+	data.Temperature.Values = values
+	data.Temperature.LastValue = values[len(values)-1].Value
 
-	hData, err := datastore.GetHumiditySeries()
+	hData, err := datastore.GetHumiditySeries(xstart, xend)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	values = []Value{}
 	for _, v := range hData {
-		data.Humidity.Values = append(data.Humidity.Values, Value{Time: v.Time, Value: v.Value})
+		values = append(values, Value{Time: v.Time, Value: v.Value})
 	}
+	data.Humidity.Values = values
+	data.Humidity.LastValue = values[len(values)-1].Value
 
-	pData, err := datastore.GetPressureSeries()
+	pData, err := datastore.GetPressureSeries(xstart, xend)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	values = []Value{}
 	for _, v := range pData {
-		data.Pressure.Values = append(data.Pressure.Values, Value{Time: v.Time, Value: v.Value})
+		values = append(values, Value{Time: v.Time, Value: v.Value})
 	}
+	data.Pressure.Values = values
+	data.Pressure.LastValue = values[len(values)-1].Value
 
 	tmpl := template.Must(template.ParseFiles("index.html"))
 	err = tmpl.Execute(w, data)

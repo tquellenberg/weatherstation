@@ -11,38 +11,59 @@
 	</style>
 </head>
 <body>
+	<a href="?range=week">Week</a>
 
 <div class="container">
     <div class="item" id="temperatureChartId" style="width:900px;height:300px;"></div>
 </div>
 <script type="text/javascript">
     "use strict";
-    let goecharts_temperature = echarts.init(document.getElementById('temperatureChartId'), "wonderland");
+    let echarts_temperature = echarts.init(document.getElementById('temperatureChartId'));
     let option_temperature = {
+		"title":{"text":"Temperature"},
+		"tooltip":{
+			trigger: 'axis',
+        	formatter: function (params) {
+            	var date = new Date(params[0].value[0]);
+				var m = date.getMinutes();
+				if (m < 10) {
+					m = "0" + m;
+				}
+            	return date.getHours() + ':' + m + 'h  ' + params[0].value[1].toFixed(1) + '°';
+        	},
+        	axisPointer: {
+            	animation: false
+        	}
+		},
+		"xAxis":[{
+			"type":"time",
+			"splitNumber":10,
+			"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
+		"yAxis":[{"min":"dataMin","max":"dataMax"}],
 		"legend":{"show":false},
 		"series":[{
 			"name":"Temperature",
 			"type":"line",
-			"smooth":true,
 			"waveAnimation":false,
 			"renderLabelForZeroData":false,
-			"selectedMode":false,
-			"animation":false,
+			"selectedMode":true,
+			"animation":true,
+			showSymbol: false,
 			"data":[
 			{{ range $i, $v := .Temperature.Values -}}
-				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}],"symbol":"none","XAxisIndex":0,"YAxisIndex":0}
+				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}]}
 			{{ end }}
 			],
 			"markLine":{
-				"data":[
-					{"name":"sunrise","xAxis":"{{ .Sunrise }}"},
-					{"name":"sunset","xAxis":"{{ .Sunset }}"}]}
-			}],
-		"title":{"text":"Temperature"},
-		"tooltip":{"show":false},
-		"xAxis":[{"type":"time","splitNumber":12,"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
-		"yAxis":[{"min":"dataMin","max":"dataMax"}]};
-	goecharts_temperature.setOption(option_temperature);
+				label: {
+					formatter: "{b}"
+				},
+				data:[
+					{"name":"Sunrise","xAxis":"{{ .Sunrise }}"},
+					{"name":"Sunset","xAxis":"{{ .Sunset }}"}]}
+			}]
+	};
+	echarts_temperature.setOption(option_temperature);
 </script>
 
 <div class="container">
@@ -50,32 +71,62 @@
 </div>
 <script type="text/javascript">
     "use strict";
-    let goecharts_presssure = echarts.init(document.getElementById('presssureChartId'), "wonderland");
+    let echarts_presssure = echarts.init(document.getElementById('presssureChartId'));
     let option_presssure = {
+		"title":{"text":"Pressure"},
+		"tooltip":{"show":false},
+		"xAxis":[{"type":"time","splitNumber":10,"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
+		"yAxis":[{"min":"dataMin","max":"dataMax"}],
 		"legend":{"show":false},
 		"series":[{
 			"name":"Pressure",
 			"type":"line",
-			"smooth":true,
 			"waveAnimation":false,
 			"renderLabelForZeroData":false,
 			"selectedMode":false,
 			"animation":false,
+			showSymbol: false,
 			"data":[
 			{{ range $i, $v := .Pressure.Values -}}
-				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}],"symbol":"none","XAxisIndex":0,"YAxisIndex":0}
+				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}]}
 			{{ end }}
 			],
 			"markLine":{
-				"data":[
-					{"name":"sunrise","xAxis":"{{ .Sunrise }}"},
-					{"name":"sunset","xAxis":"{{ .Sunset }}"}]}
-			}],
-		"title":{"text":"Pressure"},
-		"tooltip":{"show":false},
-		"xAxis":[{"type":"time","splitNumber":12,"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
-		"yAxis":[{"min":"dataMin","max":"dataMax"}]};
-	goecharts_presssure.setOption(option_presssure);
+				label: {
+					formatter: "{b}"
+				},
+				data:[
+					{"name":"Sunrise","xAxis":"{{ .Sunrise }}"},
+					{"name":"Sunset","xAxis":"{{ .Sunset }}"}]}
+			}]};
+	echarts_presssure.setOption(option_presssure);
+</script>
+
+<div class="container">
+	<div class="item" id="pressureGaugeId" style="width:400px;height:400px;"></div>
+</div>
+<script type="text/javascript">
+    "use strict";
+    let pressure_gauge = echarts.init(document.getElementById('pressureGaugeId'));
+    let option_pressure_gauge = {
+		tooltip: {
+        	formatter: '{a} <br/>{b} : {c}'
+    	},
+    	series: [{
+        	name: 'Pressure',
+        	type: 'gauge',
+			min: 970,
+			max: 1050,
+        	detail: {
+            	formatter: '{value}'
+        	},
+        	data: [{
+            	value: Number("{{ .Pressure.LastValue }}").toFixed(1),
+            	name: 'hPa'
+        	}]
+    	}]
+	};
+	pressure_gauge.setOption(option_pressure_gauge);
 </script>
 
 <div class="container">
@@ -83,32 +134,48 @@
 </div>
 <script type="text/javascript">
     "use strict";
-    let goecharts_humidity = echarts.init(document.getElementById('humidityChartId'), "wonderland");
+    let echarts_humidity = echarts.init(document.getElementById('humidityChartId'));
     let option_humidity = {
+		"title":{"text":"Humidity"},
+		"tooltip":{
+			trigger: 'axis',
+        	formatter: function (params) {
+            	var date = new Date(params[0].value[0]);
+				var m = date.getMinutes();
+				if (m < 10) {
+					m = "0" + m;
+				}
+            	return date.getHours() + ':' + m + 'h  ' + params[0].value[1].toFixed(1) + '%';
+        	},
+        	axisPointer: {
+            	animation: false
+        	}
+		},
+		"xAxis":[{"type":"time","splitNumber":10,"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
+		"yAxis":[{"min":"dataMin","max":"dataMax"}],
 		"legend":{"show":false},
 		"series":[{
 			"name":"Humidity",
 			"type":"line",
-			"smooth":true,
 			"waveAnimation":false,
 			"renderLabelForZeroData":false,
 			"selectedMode":false,
 			"animation":false,
+			showSymbol: false,
 			"data":[
 			{{ range $i, $v := .Humidity.Values -}}
-				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}],"symbol":"none","XAxisIndex":0,"YAxisIndex":0}
+				{{if $i}}, {{end}}{"value":["{{ $v.Time }}",{{ $v.Value }}]}
 			{{ end }}
 			],
 			"markLine":{
-				"data":[
-					{"name":"sunrise","xAxis":"{{ .Sunrise }}"},
-					{"name":"sunset","xAxis":"{{ .Sunset }}"}]}
-			}],
-		"title":{"text":"Humidity"},
-		"tooltip":{"show":false},
-		"xAxis":[{"type":"time","splitNumber":12,"min":"{{ .Xstart }}","max":"{{ .Xend }}"}],
-		"yAxis":[{"min":"dataMin","max":"dataMax"}]};
-	goecharts_humidity.setOption(option_humidity);
+				label: {
+					formatter: "{b}"
+				},
+				data:[
+					{"name":"Sunrise","xAxis":"{{ .Sunrise }}"},
+					{"name":"Sunset","xAxis":"{{ .Sunset }}"}]}
+			}]};
+	echarts_humidity.setOption(option_humidity);
 </script>
 
 </body>
