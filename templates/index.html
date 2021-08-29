@@ -17,94 +17,128 @@
 	<a href="/timecharts?range=week">Week</a>
 
 	<div class="container">
-		<div class="item" id="temperatureGaugeId" style="width:500px;height:500px;"></div>
-		<div class="item" id="pressureGaugeId" style="width:500px;height:500px;"></div>
-		<div class="item" id="humidityGaugeId" style="width:500px;height:500px;"></div>
+		<div class="item" id="weatherGaugeId" style="width:500px;height:500px;"></div>
 	</div>
 
 	<script type="text/javascript">
-		var temperature_gauge = echarts.init(document.getElementById('temperatureGaugeId'));
-		var option_temperature_gauge = {
+		var weather_gauge = echarts.init(document.getElementById('weatherGaugeId'));
+		var option_weather_gauge = {
 			tooltip: {
 				formatter: '{a} <br/>{b} : {c}'
 			},
 			series: [{
 				name: 'Temperature',
 				type: 'gauge',
+				radius: '36%',
+            	center: ['31%', '65%'],
 				splitNumber: 6,
 				min: -20,
 				max: 40,
+				pointer: {
+					length: '80%',
+					itemStyle: {
+						color: 'rgba(255, 51, 51, 0.8)'
+					}
+				},
+				axisLine: {
+                	show: true,
+                	lineStyle: {
+                    	width: 1,
+                    	color: [
+                        	[1, 'rgba(0, 0, 0, 0.5)']
+                    	]
+                	}
+            	},
+				title: {
+                	fontSize: 12,
+                	fontFamily: "Arial",
+				},
 				detail: {
+                	fontSize: 16,
+                	fontWeight: 800,
+                	fontFamily: "Arial",
 					formatter: '{value}'
 				},
-				data: []
-			}]
-		};
-		temperature_gauge.setOption(option_temperature_gauge);
-
-		var pressure_gauge = echarts.init(document.getElementById('pressureGaugeId'));
-		var option_pressure_gauge = {
-			tooltip: {
-				formatter: '{a} <br/>{b} : {c}'
-			},
-			series: [{
+				data: [{value:0.0, name:"°C"}]
+			},{
 				name: 'Pressure',
 				type: 'gauge',
+				radius: '100%',
+            	center: ['50%', '50%'],
 				splitNumber: 8,
 				min: 970,
 				max: 1050,
-				detail: {
-					formatter: '{value}'
+				pointer: {
+					length: '95%',
+					itemStyle: {
+						color: 'rgba(70, 70, 70, 0.5)'
+					}
 				},
-				data: []
-			}]
-		};
-		pressure_gauge.setOption(option_pressure_gauge);
-
-		var humidity_gauge = echarts.init(document.getElementById('humidityGaugeId'));
-		var option_humidity_gauge = {
-			tooltip: {
-				formatter: '{a} <br/>{b} : {c}'
-			},
-			series: [{
+				axisLine: {
+                	show: true,
+                	lineStyle: {
+                    	width: 2,
+                    	color: [
+                        	[1, '#000']
+                    	]
+                	}
+            	},
+				title: {
+                	fontSize: 18,
+                	fontFamily: "Arial",
+                	offsetCenter: [0, '-40%']
+            	},
+				detail: {
+                	fontSize: 22,
+                	fontWeight: 800,
+                	fontFamily: "Arial",
+					formatter: '{value}',
+                	offsetCenter: [0, '-30%']
+				},
+				data: [{value:0.0, name:"hPa"}]
+			},{
 				name: 'Humidity',
 				type: 'gauge',
+				radius: '36%',
+            	center: ['69%', '65%'],
 				min: 0,
 				max: 100,
+				pointer: {
+					length: '80%',
+					itemStyle: {
+						color: 'rgba(51, 51, 255, 0.8)'
+					}
+				},
+				axisLine: {
+                	show: true,
+                	lineStyle: {
+                    	width: 1,
+                    	color: [
+                        	[1, 'rgba(0, 0, 0, 0.5)']
+                    	]
+                	}
+            	},
+				title: {
+                	fontSize: 12,
+                	fontFamily: "Arial",
+				},
 				detail: {
+                	fontSize: 16,
+                	fontWeight: 800,
+                	fontFamily: "Arial",
 					formatter: '{value}'
 				},
-				data: []
+				data: [{value:0.0, name:"%"}]
 			}]
 		};
-		humidity_gauge.setOption(option_humidity_gauge);
+		weather_gauge.setOption(option_weather_gauge);
 
 		function updateValues() {
 			$.get("/currentValues", function(data) {
-				temperature_gauge.setOption({
-					series: [{
-						data: [{
-							value: data.currentTemperature.toFixed(1),
-							name: '°C'
-						}]
-					}]
-				})
-				pressure_gauge.setOption({
-					series: [{
-						data: [{
-							value: data.currentPressure.toFixed(1),
-							name: 'hPa'
-						}]
-					}]
-				})
-				humidity_gauge.setOption({
-					series: [{
-						data: [{
-							value: data.currentHumidity.toFixed(0),
-							name: '%'
-						}]
-					}]
-				})
+				option_weather_gauge.series[0].data[0].value = data.currentTemperature.toFixed(1)
+				option_weather_gauge.series[1].data[0].value = data.currentPressure.toFixed(1)
+				option_weather_gauge.series[2].data[0].value = data.currentHumidity.toFixed(0)
+				weather_gauge.setOption(option_weather_gauge, true);
 			})
 		}
 
