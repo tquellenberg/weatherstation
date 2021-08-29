@@ -105,39 +105,7 @@
 				data: data
 			}]
 		});
-		currentValue = data[data.length-1].value[1]
-		pressure_gauge.setOption({
-			series: [{
-				data: [{
-            		value: currentValue,
-            		name: 'hPa'
-        		}]
-			}]
-		});
 	})
-</script>
-
-<div class="container">
-	<div class="item" id="pressureGaugeId" style="width:400px;height:400px;"></div>
-</div>
-<script type="text/javascript">
-    var pressure_gauge = echarts.init(document.getElementById('pressureGaugeId'));
-    var option_pressure_gauge = {
-		tooltip: {
-        	formatter: '{a} <br/>{b} : {c}'
-    	},
-    	series: [{
-        	name: 'Pressure',
-        	type: 'gauge',
-			min: 970,
-			max: 1050,
-        	detail: {
-            	formatter: '{value}'
-        	},
-        	data: []
-    	}]
-	};
-	pressure_gauge.setOption(option_pressure_gauge);
 </script>
 
 <div class="container">

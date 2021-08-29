@@ -43,10 +43,16 @@ const DEFAULT_HTTP_PORT = 8082
 
 func initHttp(port int) {
 	log.Print("Http: Init")
+	// Timecharts
 	http.HandleFunc("/temperatureData", chart.TempData)
 	http.HandleFunc("/pressureData", chart.PressureData)
 	http.HandleFunc("/humidityData", chart.HumidityData)
+	http.HandleFunc("/timecharts", chart.TimeCharts)
+
+	// Index Overview
+	http.HandleFunc("/currentValues", chart.CurrentValues)
 	http.HandleFunc("/", chart.Index)
+
 	go func() {
 		addr := fmt.Sprintf(":%d", port)
 		log.Printf("Http: Start listening on %s", addr)

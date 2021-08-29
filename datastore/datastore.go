@@ -23,6 +23,8 @@ type Entry struct {
 	Value float32
 }
 
+var lastValues []Entry
+
 // Position in CSV file
 type CsvPos int
 
@@ -53,12 +55,33 @@ func getFilename() string {
 	return dataDir + "/" + filename
 }
 
+func updateLastValue(res bme280.Result, t string) {
+	l := make([]Entry, 0, 3)
+	l = append(l, Entry{Time: t, Value: res.Temperature})
+	l = append(l, Entry{Time: t, Value: res.Pressure})
+	l = append(l, Entry{Time: t, Value: res.Humidity})
+	lastValues = l
+}
+
+func GetLastValues() []Entry {
+	if len(lastValues) < 3 {
+		l := make([]Entry, 0, 3)
+		l = append(l, Entry{Time: "", Value: 0.0})
+		l = append(l, Entry{Time: "", Value: 0.0})
+		l = append(l, Entry{Time: "", Value: 0.0})
+		return l
+	}
+	return lastValues
+}
+
 func AppendToStore(res bme280.Result) {
-	column := []string{time.Now().Format(DateTimeFormat),
+	t := time.Now().Format(DateTimeFormat)
+	column := []string{t,
 		fmt.Sprintf("%3.2f", res.Temperature),
 		fmt.Sprintf("%4.2f", res.Pressure),
 		fmt.Sprintf("%3.2f", res.Humidity)}
 
+	updateLastValue(res, t)
 	f, err := os.OpenFile(getFilename(), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Println("Error: ", err)

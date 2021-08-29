@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Tom's Weather Station</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.1.2/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.1.2/theme/infographic.min.js"></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+		.container {display: flex; justify-content: center; align-items: center;}
+		.item {margin: auto;}
+	</style>
+</head>
+<body>
+	<a href="/">Overview</a>
+	<a href="/timecharts?range=">Day</a>
+	<a href="/timecharts?range=week">Week</a>
+
+	<div class="container">
+		<div class="item" id="temperatureGaugeId" style="width:500px;height:500px;"></div>
+		<div class="item" id="pressureGaugeId" style="width:500px;height:500px;"></div>
+		<div class="item" id="humidityGaugeId" style="width:500px;height:500px;"></div>
+	</div>
+
+	<script type="text/javascript">
+		var temperature_gauge = echarts.init(document.getElementById('temperatureGaugeId'));
+		var option_temperature_gauge = {
+			tooltip: {
+				formatter: '{a} <br/>{b} : {c}'
+			},
+			series: [{
+				name: 'Temperature',
+				type: 'gauge',
+				splitNumber: 6,
+				min: -20,
+				max: 40,
+				detail: {
+					formatter: '{value}'
+				},
+				data: []
+			}]
+		};
+		temperature_gauge.setOption(option_temperature_gauge);
+
+		var pressure_gauge = echarts.init(document.getElementById('pressureGaugeId'));
+		var option_pressure_gauge = {
+			tooltip: {
+				formatter: '{a} <br/>{b} : {c}'
+			},
+			series: [{
+				name: 'Pressure',
+				type: 'gauge',
+				splitNumber: 8,
+				min: 970,
+				max: 1050,
+				detail: {
+					formatter: '{value}'
+				},
+				data: []
+			}]
+		};
+		pressure_gauge.setOption(option_pressure_gauge);
+
+		var humidity_gauge = echarts.init(document.getElementById('humidityGaugeId'));
+		var option_humidity_gauge = {
+			tooltip: {
+				formatter: '{a} <br/>{b} : {c}'
+			},
+			series: [{
+				name: 'Humidity',
+				type: 'gauge',
+				min: 0,
+				max: 100,
+				detail: {
+					formatter: '{value}'
+				},
+				data: []
+			}]
+		};
+		humidity_gauge.setOption(option_humidity_gauge);
+
+		function updateValues() {
+			$.get("/currentValues", function(data) {
+				temperature_gauge.setOption({
+					series: [{
+						data: [{
+							value: data.currentTemperature.toFixed(1),
+							name: '°C'
+						}]
+					}]
+				})
+				pressure_gauge.setOption({
+					series: [{
+						data: [{
+							value: data.currentPressure.toFixed(1),
+							name: 'hPa'
+						}]
+					}]
+				})
+				humidity_gauge.setOption({
+					series: [{
+						data: [{
+							value: data.currentHumidity.toFixed(0),
+							name: '%'
+						}]
+					}]
+				})
+			})
+		}
+
+		updateValues();
+		setInterval(function() {
+			if (! document.hidden) {
+				updateValues();
+			}
+		}, 5 * 1000);
+		document.addEventListener("visibilitychange", function() {
+  			if (document.visibilityState === 'visible') {
+    			updateValues();
+  			}
+		});
+	</script>
+</body>
+</html>
