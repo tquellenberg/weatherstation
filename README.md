@@ -11,4 +11,10 @@ The collected data is displayed in charts on a small web page.
 
 ### Screenshot
 
+Current values:
+
 ![image](images/gauge.png)
+
+Values for one day:
+
+![image](images/timeseries.png)
