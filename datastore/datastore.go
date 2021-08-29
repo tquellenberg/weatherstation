@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"container/list"
 	"fmt"
 	"log"
 	"os"
@@ -23,7 +24,13 @@ type Entry struct {
 	Value float32
 }
 
+// Three entries with the last values for temp(0), pressure(1) and humidity(2)
 var lastValues []Entry
+
+// Last 30 pressure entries; used to determine the air pressure trend
+var pressureQueue = list.New()
+
+const pressureQueueMaxLength = 30
 
 // Position in CSV file
 type CsvPos int
@@ -63,6 +70,13 @@ func updateLastValue(res bme280.Result, t string) {
 	lastValues = l
 }
 
+func updatePressureQueue(res bme280.Result, t string) {
+	pressureQueue.PushBack(Entry{Time: t, Value: res.Pressure})
+	for pressureQueue.Len() > pressureQueueMaxLength {
+		pressureQueue.Remove(pressureQueue.Front())
+	}
+}
+
 func GetLastValues() []Entry {
 	if len(lastValues) < 3 {
 		l := make([]Entry, 0, 3)
@@ -74,6 +88,20 @@ func GetLastValues() []Entry {
 	return lastValues
 }
 
+// Return "up", "down" or ""
+func GetPressureTrend() string {
+	if pressureQueue.Len() > 0 {
+		currentPressure := GetLastValues()[1].Value
+		pastPressure := pressureQueue.Front().Value.(Entry).Value
+		if currentPressure > pastPressure {
+			return "up"
+		} else if currentPressure < pastPressure {
+			return "down"
+		}
+	}
+	return ""
+}
+
 func AppendToStore(res bme280.Result) {
 	t := time.Now().Format(DateTimeFormat)
 	column := []string{t,
@@ -82,6 +110,7 @@ func AppendToStore(res bme280.Result) {
 		fmt.Sprintf("%3.2f", res.Humidity)}
 
 	updateLastValue(res, t)
+	updatePressureQueue(res, t)
 	f, err := os.OpenFile(getFilename(), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Println("Error: ", err)

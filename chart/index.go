@@ -16,6 +16,7 @@ type CurrentDataJson struct {
 	CurrentTemperature float32 `json:"currentTemperature"`
 	CurrentPressure    float32 `json:"currentPressure"`
 	CurrentHumidity    float32 `json:"currentHumidity"`
+	PressureTrend      string  `json:"pressureTrend"`
 }
 
 func CurrentValues(w http.ResponseWriter, req *http.Request) {
@@ -25,6 +26,7 @@ func CurrentValues(w http.ResponseWriter, req *http.Request) {
 		CurrentTemperature: values[0].Value,
 		CurrentPressure:    values[1].Value,
 		CurrentHumidity:    values[2].Value,
+		PressureTrend:      datastore.GetPressureTrend(),
 	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
