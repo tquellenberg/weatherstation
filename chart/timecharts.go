@@ -92,8 +92,8 @@ func TimeCharts(w http.ResponseWriter, req *http.Request) {
 		Xstart:    xstart.Format(datastore.DateTimeFormat),
 		Xend:      xend.Format(datastore.DateTimeFormat)}
 
-	tmpl := template.Must(template.ParseFiles("templates/timeCharts.html"))
-	err := tmpl.Execute(w, data)
+	tmpl := template.Must(template.ParseGlob("templates/*.html"))
+	err := tmpl.ExecuteTemplate(w, "timeCharts.html", data)
 	if err != nil {
 		log.Print(err)
 	}

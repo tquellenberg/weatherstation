@@ -34,8 +34,9 @@ func CurrentValues(w http.ResponseWriter, req *http.Request) {
 }
 
 func Index(w http.ResponseWriter, req *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/index.html"))
-	err := tmpl.Execute(w, CurrentDataPage{})
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	tmpl := template.Must(template.ParseGlob("templates/*.html"))
+	err := tmpl.ExecuteTemplate(w, "index.html", CurrentDataPage{})
 	if err != nil {
 		log.Print(err)
 	}
