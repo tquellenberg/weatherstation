@@ -14,6 +14,8 @@ import (
 	"github.com/tquellenberg/weatherstation/opensensemap"
 	"github.com/tquellenberg/weatherstation/sun"
 	"gopkg.in/yaml.v3"
+
+	"github.com/gorilla/mux"
 )
 
 type Config struct {
@@ -43,20 +45,23 @@ const DEFAULT_HTTP_PORT = 8082
 
 func initHttp(port int) {
 	log.Print("Http: Init")
+
+	r := mux.NewRouter()
+
 	// Timecharts
-	http.HandleFunc("/temperatureData", chart.TempData)
-	http.HandleFunc("/pressureData", chart.PressureData)
-	http.HandleFunc("/humidityData", chart.HumidityData)
-	http.HandleFunc("/timecharts", chart.TimeCharts)
+	r.HandleFunc("/temperatureData", chart.TempData).Methods("GET")
+	r.HandleFunc("/pressureData", chart.PressureData).Methods("GET")
+	r.HandleFunc("/humidityData", chart.HumidityData).Methods("GET")
+	r.HandleFunc("/timecharts", chart.TimeCharts).Methods("GET")
 
 	// Index Overview
-	http.HandleFunc("/currentValues", chart.CurrentValues)
-	http.HandleFunc("/", chart.Index)
+	r.HandleFunc("/currentValues", chart.CurrentValues).Methods("GET")
+	r.HandleFunc("/", chart.Index).Methods("GET")
 
 	go func() {
 		addr := fmt.Sprintf(":%d", port)
 		log.Printf("Http: Start listening on %s", addr)
-		log.Println(http.ListenAndServe(addr, nil))
+		log.Println(http.ListenAndServe(addr, r))
 	}()
 }
 
