@@ -16,6 +16,8 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/gorilla/mux"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Config struct {
@@ -49,14 +51,17 @@ func initHttp(port int) {
 	r := mux.NewRouter()
 
 	// Timecharts
-	r.HandleFunc("/temperatureData", chart.TempData).Methods("GET")
-	r.HandleFunc("/pressureData", chart.PressureData).Methods("GET")
-	r.HandleFunc("/humidityData", chart.HumidityData).Methods("GET")
-	r.HandleFunc("/timecharts", chart.TimeCharts).Methods("GET")
+	r.HandleFunc("/temperatureData", chart.TempData).Methods(http.MethodGet)
+	r.HandleFunc("/pressureData", chart.PressureData).Methods(http.MethodGet)
+	r.HandleFunc("/humidityData", chart.HumidityData).Methods(http.MethodGet)
+	r.HandleFunc("/timecharts", chart.TimeCharts).Methods(http.MethodGet)
 
 	// Index Overview
-	r.HandleFunc("/currentValues", chart.CurrentValues).Methods("GET")
+	r.HandleFunc("/currentValues", chart.CurrentValues).Methods(http.MethodGet)
 	r.HandleFunc("/", chart.Index).Methods("GET")
+
+	// Metrics
+	r.Handle("/metrics", promhttp.Handler())
 
 	go func() {
 		addr := fmt.Sprintf(":%d", port)
@@ -112,6 +117,8 @@ func main() {
 
 	initHttp(config.Http.Port)
 
+	InitMetrics()
+
 	sun.InitLocation(config.Position.Latitude, config.Position.Longitude)
 
 	if *noDataReading {
@@ -137,6 +144,8 @@ func main() {
 				fmt.Printf("Humi: %3.2f %%\n", v.Humidity)
 
 				datastore.AppendToStore(v)
+
+				UpdateMetrics(v)
 
 				if *opensensemapToken != "" {
 					go sendOpensensemapData(opensensemapToken, v, &config)
